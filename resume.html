@@ -1,0 +1,1554 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editable Resume</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Domine&display=swap');
+        body {
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #FF6F61, #6B728E, #FFD166);
+            font-family: 'Domine', serif;
+            color: #1B263B;
+        }
+        #resume-container {
+            width: 100vw;
+            height: auto;
+            margin: 0 auto;
+            background-color: #FFF3E0;
+            box-shadow: 0 6px 24px rgba(0, 0, 0, 0.2);
+            border-radius: 12px;
+            position: relative;
+            box-sizing: border-box;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        .page {
+            width: 100%;
+            min-height: 100vh;
+            padding: 10mm;
+            box-sizing: border-box;
+            position: relative;
+            overflow-y: auto;
+        }
+        .section {
+            background-color: inherit;
+            margin: 0.5rem 0;
+        }
+        .section-title {
+            font-weight: 700;
+            font-size: 16pt;
+            text-align: center;
+            margin: 0.5rem 0;
+            padding: 0.5rem;
+            background: linear-gradient(45deg, #FF6F61, #FFD166);
+            color: white;
+            border-radius: 8px;
+            width: 100%;
+            box-sizing: border-box;
+            text-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+            cursor: pointer;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .section-title:hover {
+            transform: scale(1.03);
+            box-shadow: 0 0 10px rgba(255, 111, 97, 0.5);
+        }
+        .divider {
+            border-top: 2px solid transparent;
+            background: linear-gradient(to right, #FF6F61, #FFF3E0, #FFD166);
+            margin: 0.5rem 0;
+        }
+        #profilePhoto {
+            width: 35mm;
+            height: 46.67mm;
+            object-fit: cover;
+            border: 3px solid #FF6F61;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+            cursor: pointer;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+        th, td {
+            border: 2px solid #FF6F61;
+            padding: 4pt;
+            text-align: justify;
+            font-size: 11pt;
+            font-weight: bold;
+        }
+        th {
+            background-color: #FF6F61;
+            color: white;
+            font-weight: 700;
+            text-shadow: 0 0 5px rgba(255, 255, 240, 0.5);
+        }
+        .text-sm {
+            font-size: 11pt;
+            font-weight: bold;
+            text-align: justify;
+            line-height: 1.2;
+            margin-bottom: 0.3rem;
+        }
+        .text-3xl {
+            font-size: 20pt;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 0.5rem;
+            color: #FF6F61;
+            text-shadow: 0 0 5px rgba(255, 255, 255, 0.3);
+        }
+        #controls-container {
+            display: none;
+            width: 100%;
+            height: 30vh;
+            padding: 0.5rem;
+            background: linear-gradient(45deg, #FF6F61, #FFD166, #6B728E);
+            box-sizing: border-box;
+            border-radius: 12px 12px 0 0;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            z-index: 1000;
+            overflow-x: auto;
+            overflow-y: auto;
+            white-space: nowrap;
+        }
+        .controls {
+            display: flex;
+            gap: 0.5rem;
+            padding: 0.5rem;
+        }
+        .menu-group {
+            display: inline-block;
+            vertical-align: top;
+            min-width: 120px;
+        }
+        .menu-button {
+            display: block;
+            width: 100%;
+            padding: 0.6rem 1rem;
+            font-size: 14px;
+            background: linear-gradient(45deg, #FF6F61, #FFD166);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            text-align: center;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            font-family: 'Domine', serif;
+        }
+        .menu-button:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 12px rgba(255, 111, 97, 0.6);
+        }
+        .menu-content {
+            display: none;
+            flex-direction: column;
+            gap: 0.5rem;
+            padding: 0.5rem;
+            background: rgba(255, 243, 224, 0.95);
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+        }
+        .menu-content.active {
+            display: flex;
+        }
+        button, .file-button {
+            padding: 0.6rem 1rem;
+            font-size: 14px;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: linear-gradient(45deg, #6B728E, #FF6F61);
+            color: white;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+            touch-action: none;
+            user-select: none;
+            font-family: 'Domine', serif;
+        }
+        button:hover, .file-button:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 12px rgba(107, 114, 142, 0.6);
+        }
+        button.dragging {
+            opacity: 0.7;
+            cursor: move;
+        }
+        input[type="file"] {
+            display: none;
+        }
+        .file-button {
+            background: linear-gradient(45deg, #FFD166, #FF6F61);
+        }
+        select, input[type="color"] {
+            padding: 0.6rem;
+            font-size: 14px;
+            border: 2px solid #FF6F61;
+            border-radius: 12px;
+            background-color: #FFE4E1;
+            color: #1B263B;
+            width: 100%;
+            font-family: 'Domine', serif;
+        }
+        .control-group label {
+            font-size: 12px;
+            color: #1B263B;
+            font-weight: bold;
+            text-align: center;
+            font-family: 'Domine', serif;
+        }
+        #floatingButton {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, #FF6F61, #FFD166);
+            color: white;
+            border: none;
+            font-size: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            z-index: 1001;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            font-family: 'Domine', serif;
+        }
+        #floatingButton:hover {
+            transform: scale(1.15);
+            box-shadow: 0 0 15px rgba(255, 111, 97, 0.7);
+        }
+        .swipe-indicator {
+            position: fixed;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 24px;
+            color: #FF6F61;
+            background: rgba(255, 243, 224, 0.8);
+            padding: 0.6rem;
+            border-radius: 50%;
+            cursor: pointer;
+            user-select: none;
+            z-index: 10;
+        }
+        #prevPage {
+            left: 10px;
+        }
+        #nextPage {
+            right: 10px;
+        }
+        .section-controls {
+            display: none;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+            justify-content: center;
+        }
+        .section-controls.active {
+            display: flex;
+        }
+        .section-controls button {
+            background: linear-gradient(45deg, #6B728E, #FFD166);
+            padding: 0.5rem 1rem;
+            font-size: 14px;
+            border-radius: 10px;
+        }
+        .section-controls button:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 10px rgba(107, 114, 142, 0.6);
+        }
+        .address-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .address-content {
+            flex: 1;
+            padding-right: 1rem;
+        }
+        @media (max-width: 768px) {
+            #resume-container {
+                width: 100vw;
+                height: auto;
+                padding: 0;
+                margin: 0;
+                box-shadow: none;
+            }
+            .page {
+                padding: 5mm;
+                min-height: auto;
+                max-height: none;
+                overflow-y: visible;
+            }
+            #profilePhoto {
+                width: 25mm;
+                height: 33.33mm;
+            }
+            .section-title {
+                font-size: 14pt;
+                padding: 0.4rem;
+                margin: 0.3rem 0;
+            }
+            .text-3xl {
+                font-size: 18pt;
+                margin-bottom: 0.3rem;
+            }
+            th, td {
+                font-size: 10pt;
+                padding: 3pt;
+            }
+            .text-sm {
+                font-size: 10pt;
+                line-height: 1.1;
+                margin-bottom: 0.2rem;
+            }
+            #controls-container {
+                padding: 0.4rem;
+                height: 30vh;
+            }
+            .menu-button {
+                font-size: 12px;
+                padding: 0.5rem 0.8rem;
+            }
+            button, .file-button, select, input[type="color"] {
+                font-size: 12px;
+                padding: 0.5rem 0.8rem;
+            }
+            .menu-group {
+                min-width: 100px;
+            }
+            .swipe-indicator {
+                font-size: 18px;
+                padding: 0.4rem;
+            }
+            #floatingButton {
+                width: 50px;
+                height: 50px;
+                font-size: 24px;
+            }
+            .section-controls button {
+                font-size: 12px;
+                padding: 0.4rem 0.8rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="resume-container">
+        <div class="page" id="page-1">
+            <h1 contenteditable="true" class="text-3xl">RESUME</h1>
+            <div class="section" id="address">
+                <div class="section-controls">
+                    <button onclick="moveSectionToEnd(this)">↓ To End</button>
+                    <button onclick="changeSectionHeadingColor()">Change Heading Color</button>
+                    <button onclick="copySection(this)">Copy</button>
+                </div>
+                <h2 contenteditable="true" class="section-title">Address</h2>
+                <div class="address-section">
+                    <div class="address-content text-sm">
+                        <p contenteditable="true">
+Name :- Abhaya Behera 
+<br>
+Phone:- 9348692218
+<br>
+Gmail:- beheraabhaya416@gmail.com
+<br>
+Address: 
+<br>
+At- Achuli 
+<br>
+Po/Ps- Purushottampur
+<br>
+Pin-761018
+<br>
+Dist-Ganjam
+<br>
+State-Odisha
+</p>
+                    </div>
+                    <img id="profilePhoto" src="https://via.placeholder.com/35x46.67" alt="Profile Photo" onclick="document.getElementById('photoInput').click()">
+                </div>
+            </div>
+            <div class="divider"></div>
+            <div class="section" id="objective">
+                <div class="section-controls">
+                    <button onclick="moveSectionToEnd(this)">↓ To End</button>
+                    <button onclick="changeSectionHeadingColor()">Change Heading Color</button>
+                    <button onclick="copySection(this)">Copy</button>
+                </div>
+                <h2 contenteditable="true" class="section-title">Objective</h2>
+                <p contenteditable="true" class="text-sm">
+                    To be able to work for an encouraging and stable company that will assist me in developing, improving, and obtaining the necessary skills in order to become the best Employee as possible. I am looking forward to challenging my potential and be worthy of Management trust and confidence.
+                </p>
+            </div>
+            <div class="divider"></div>
+            <div class="section" id="qualification">
+                <div class="section-controls">
+                    <button onclick="moveSectionToEnd(this)">↓ To End</button>
+                    <button onclick="changeSectionHeadingColor()">Change Heading Color</button>
+                    <button onclick="copySection(this)">Copy</button>
+                </div>
+                <h2 contenteditable="true" class="section-title">Qualification</h2>
+                <table id="qualificationTable" class="text-sm">
+                    <thead>
+                        <tr>
+                            <th contenteditable="true">Degree</th>
+                            <th contenteditable="true">Institution</th>
+                            <th contenteditable="true">Year</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td contenteditable="true">B.Sc.</td>
+                            <td contenteditable="true">XYZ University</td>
+                            <td contenteditable="true">2020</td>
+                        </tr>
+                        <tr>
+                            <td contenteditable="true">HSC</td>
+                            <td contenteditable="true">ABC College</td>
+                            <td contenteditable="true">2017</td>
+                        </tr>
+                        <tr>
+                            <td contenteditable="true">SSC</td>
+                            <td contenteditable="true">DEF School</td>
+                            <td contenteditable="true">2015</td>
+                        </tr>
+                        <tr>
+                            <td contenteditable="true">Certificate</td>
+                            <td contenteditable="true">GHI Institute</td>
+                            <td contenteditable="true">2021</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="divider"></div>
+            <div class="section" id="skills">
+                <div class="section-controls">
+                    <button onclick="moveSectionToEnd(this)">↓ To End</button>
+                    <button onclick="changeSectionHeadingColor()">Change Heading Color</button>
+                    <button onclick="copySection(this)">Copy</button>
+                </div>
+                <h2 contenteditable="true" class="section-title">Skills</h2>
+                <p contenteditable="true" class="text-sm">
+                    I know all the basic computer skills known as MS Word, MS Excel, and PowerPoint.
+                </p>
+            </div>
+            <div class="divider"></div>
+            <div class="section" id="personal">
+                <div class="section-controls">
+                    <button onclick="moveSectionToEnd(this)">↓ To End</button>
+                    <button onclick="changeSectionHeadingColor()">Change Heading Color</button>
+                    <button onclick="copySection(this)">Copy</button>
+                </div>
+                <h2 contenteditable="true" class="section-title">Personal Profile</h2>
+                <div class="text-sm">
+                    <p><span class="font-semibold">My Name:</span> <span contenteditable="true">Abhaya Behera</span></p>
+                    <p><span class="font-semibold">Father Name:</span> <span contenteditable="true">Prabasi Behera</span></p>
+                    <p><span class="font-semibold">Date of Birth:</span> <span contenteditable="true">10/03/1999</span></p>
+                    <p><span class="font-semibold">Marital Status:</span> <span contenteditable="true">Unmarried</span></p>
+                    <p><span class="font-semibold">Gender:</span> <span contenteditable="true">Male</span></p>
+                    <p><span class="font-semibold">Religion:</span> <span contenteditable="true">Hindu</span></p>
+                    <p><span class="font-semibold">Nationality:</span> <span contenteditable="true">Indian</span></p>
+                </div>
+            </div>
+            <div class="divider"></div>
+            <div class="section" id="declaration">
+                <div class="section-controls">
+                    <button onclick="moveSectionToEnd(this)">↓ To End</button>
+                    <button onclick="changeSectionHeadingColor()">Change Heading Color</button>
+                    <button onclick="copySection(this)">Copy</button>
+                </div>
+                <h2 contenteditable="true" class="section-title">Declaration</h2>
+                <p contenteditable="true" class="text-sm">
+                    I hereby declare that the details above are correct and true to the best of my knowledge.
+                </p>
+                <div class="flex justify-between text-sm mt-2">
+                    <div>
+                        <p contenteditable="true">Place: <span>____________</span></p>
+                        <p contenteditable="true">Date: <span>____________</span></p>
+                    </div>
+                    <p class="text-right">Signature: <span contenteditable="true">____________</span></p>
+                </div>
+            </div>
+        </div>
+        <div class="swipe-indicator" id="prevPage" onclick="navigatePage(-1)">←</div>
+        <div class="swipe-indicator" id="nextPage" onclick="navigatePage(1)">→</div>
+    </div>
+    <button id="floatingButton" onclick="toggleControls()">☰</button>
+    <div id="controls-container">
+        <div class="controls">
+            <div class="menu-group">
+                <button class="menu-button" onclick="toggleMenu(this)">Export</button>
+                <div class="menu-content">
+                    <button onclick="exportToHTML()">Save as HTML</button>
+                </div>
+            </div>
+            <div class="menu-group">
+                <button class="menu-button" onclick="toggleMenu(this)">Import</button>
+                <div class="menu-content">
+                    <input type="file" id="htmlInput" accept="text/html" onchange="importHTML()">
+                    <span class="file-button" onclick="document.getElementById('htmlInput').click()">Load HTML</span>
+                </div>
+            </div>
+            <div class="menu-group">
+                <button class="menu-button" onclick="toggleMenu(this)">Pages</button>
+                <div class="menu-content">
+                    <button onclick="addNewPage()">Add New Page</button>
+                    <select id="deletePageSelect">
+                        <option value="">Pick a Page</option>
+                    </select>
+                    <button onclick="deletePage()">Delete Page</button>
+                </div>
+            </div>
+            <div class="menu-group">
+                <button class="menu-button" onclick="toggleMenu(this)">Sections</button>
+                <div class="menu-content">
+                    <button onclick="addSection()">Add New Section</button>
+                    <select id="deleteSectionSelect">
+                        <option value="">Pick a Section</option>
+                    </select>
+                    <button onclick="deleteSection()">Delete Section</button>
+                </div>
+            </div>
+            <div class="menu-group">
+                <button class="menu-button" onclick="toggleMenu(this)">Section Color</button>
+                <div class="menu-content">
+                    <select id="sectionSelect" onchange="updateSectionBackground()">
+                        <option value="">Pick a Section</option>
+                    </select>
+                    <select id="sectionBackgroundSelect" onchange="updateSectionBackground()">
+                        <option value="inherit">Default</option>
+                        <option value="#FFE4E1">Soft Pink</option>
+                        <option value="#E6F3E6">Mint Green</option>
+                        <option value="#F0F4FF">Light Blue</option>
+                        <option value="#FFF8E1">Warm Cream</option>
+                        <option value="#FFD7E8">Bubblegum</option>
+                        <option value="#E8ECEF">Cool Gray</option>
+                        <option value="#FFFACD">Lemon Chiffon</option>
+                        <option value="#E6E6FA">Lavender</option>
+                        <option value="#F5F5DC">Beige</option>
+                        <option value="#D3F3EE">Aqua Mist</option>
+                    </select>
+                </div>
+            </div>
+            <div class="menu-group">
+                <button class="menu-button" onclick="toggleMenu(this)">Project</button>
+                <div class="menu-content">
+                    <button onclick="saveProject()">Save Project</button>
+                    <select id="loadProject" onchange="loadProject()">
+                        <option value="">Load Project</option>
+                    </select>
+                    <button onclick="deleteProject()">Delete Project</button>
+                </div>
+            </div>
+            <div class="menu-group">
+                <button class="menu-button" onclick="toggleMenu(this)">Photo</button>
+                <div class="menu-content">
+                    <input type="file" id="photoInput" accept="image/*" onchange="changePhoto()">
+                    <span class="file-button" onclick="document.getElementById('photoInput').click()">Upload Photo</span>
+                </div>
+            </div>
+            <div class="menu-group">
+                <button class="menu-button" onclick="toggleMenu(this)">Table</button>
+                <div class="menu-content">
+                    <button onclick="addTableRow()">Add Table Row</button>
+                    <button onclick="addTableColumn()">Add Table Column</button>
+                    <button onclick="deleteTableRow()">Delete Table Row</button>
+                    <button onclick="deleteTableColumn()">Delete Table Column</button>
+                </div>
+            </div>
+            <div class="menu-group">
+                <button class="menu-button" onclick="toggleMenu(this)">Text Style</button>
+                <div class="menu-content">
+                    <button onclick="toggleItalic()">Make Italic</button>
+                    <button onclick="toggleBold()">Make Bold</button>
+                    <input type="color" id="fontColor" onchange="changeFontColor()" title="Pick Color">
+                </div>
+            </div>
+            <div class="menu-group">
+                <button class="menu-button" onclick="toggleMenu(this)">Lists</button>
+                <div class="menu-content">
+                    <button onclick="toggleBulletList()">Bullet List</button>
+                    <button onclick="toggleNumberedList()">Numbered List</button>
+                </div>
+            </div>
+            <div class="menu-group">
+                <button class="menu-button" onclick="toggleMenu(this)">Background</button>
+                <div class="menu-content">
+                    <select id="backgroundSelect" onchange="changeBackground()">
+                        <option value="#FFF3E0">Peach</option>
+                        <option value="linear-gradient(135deg, #F0F4FF, #D9E2FF)">Blue Sky</option>
+                        <option value="linear-gradient(135deg, #FFE4E1, #FFCCD5)">Pink Glow</option>
+                        <option value="linear-gradient(135deg, #E6F3E6, #CCE8CC)">Mint Fresh</option>
+                        <option value="linear-gradient(135deg, #FFF8E1, #FFE8A3)">Sunny Cream</option>
+                        <option value="linear-gradient(135deg, #E8ECEF, #D3D8E8)">Cool Gray</option>
+                        <option value="linear-gradient(135deg, #FFFACD, #FFE4B5)">Lemon Chiffon</option>
+                        <option value="linear-gradient(135deg, #E6E6FA, #D8BFD8)">Lavender Mist</option>
+                        <option value="linear-gradient(135deg, #F5F5DC, #EEE8AA)">Beige Glow</option>
+                        <option value="linear-gradient(135deg, #D3F3EE, #B0E6DE)">Aqua Mist</option>
+                    </select>
+                </div>
+            </div>
+            <div class="menu-group">
+                <button class="menu-button" onclick="toggleMenu(this)">Line Spacing</button>
+                <div class="menu-content">
+                    <select id="lineSpacingSelect" onchange="changeLineSpacing()">
+                        <option value="1.0">Tight</option>
+                        <option value="1.2" selected>Normal</option>
+                        <option value="1.5">Spacious</option>
+                    </select>
+                </div>
+            </div>
+            <div class="menu-group">
+                <button class="menu-button" onclick="toggleMenu(this)">Page Border</button>
+                <div class="menu-content">
+                    <button onclick="togglePageBorder()">Toggle Border</button>
+                    <select id="borderStyleSelect" onchange="changeBorderStyle()">
+                        <option value="solid">Solid</option>
+                        <option value="dashed">Dashed</option>
+                        <option value="dotted">Dotted</option>
+                        <option value="double">Double</option>
+                        <option value="groove">Groove</option>
+                        <option value="ridge">Ridge</option>
+                        <option value="inset">Inset</option>
+                        <option value="outset">Outset</option>
+                    </select>
+                </div>
+            </div>
+            <div class="menu-group">
+                <button class="menu-button" onclick="toggleMenu(this)">Text Alignment</button>
+                <div class="menu-content">
+                    <select id="textAlignmentSelect" onchange="changeTextAlignment()">
+                        <option value="justify">Even</option>
+                        <option value="left">Left</option>
+                        <option value="center">Center</option>
+                        <option value="right">Right</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        let currentProjectName = null;
+        let isDragging = false;
+        let draggedButton = null;
+        let longPressTimer = null;
+        let pageBorder = false;
+        let currentPage = 1;
+        let totalPages = 1;
+        let currentBorderStyle = 'solid';
+
+        let db;
+        const request = indexedDB.open('ResumeDB', 23);
+        request.onupgradeneeded = (event) => {
+            db = event.target.result;
+            if (!db.objectStoreNames.contains('projects')) {
+                db.createObjectStore('projects', { keyPath: 'name' });
+            }
+        };
+        request.onsuccess = (event) => {
+            db = event.target.result;
+            loadProjectList();
+            updateDeleteSectionList();
+            updateSectionSelectList();
+            updateDeletePageList();
+            fitContentToA4();
+            setupButtonDragging();
+            setupPageSwipe();
+            updatePageNavigation();
+            setupSelectionListener();
+        };
+        request.onerror = () => alert('IndexedDB failed.');
+
+        function setupSelectionListener() {
+            document.addEventListener('selectionchange', () => {
+                const selection = window.getSelection();
+                if (selection.rangeCount) {
+                    const range = selection.getRangeAt(0);
+                    const selectedElement = range.startContainer.parentElement;
+                    const section = selectedElement.closest('.section');
+                    document.querySelectorAll('.section-controls').forEach(controls => {
+                        controls.classList.remove('active');
+                    });
+                    if (section) {
+                        const controls = section.querySelector('.section-controls');
+                        if (controls) {
+                            controls.classList.add('active');
+                        }
+                    }
+                }
+            });
+        }
+
+        function toggleControls() {
+            const controlsContainer = document.getElementById('controls-container');
+            const floatingButton = document.getElementById('floatingButton');
+            const isVisible = controlsContainer.style.display === 'block';
+            controlsContainer.style.display = isVisible ? 'none' : 'block';
+            floatingButton.textContent = isVisible ? '☰' : '×';
+            if (isVisible) {
+                document.querySelectorAll('.menu-content').forEach(content => {
+                    content.classList.remove('active');
+                });
+            }
+        }
+
+        function toggleMenu(button) {
+            const menuContent = button.nextElementSibling;
+            const isActive = menuContent.classList.contains('active');
+            document.querySelectorAll('.menu-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            if (!isActive) {
+                menuContent.classList.add('active');
+            }
+        }
+
+        function downloadFile(blob, filename) {
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            setTimeout(() => {
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+            }, 100);
+        }
+
+        function fitContentToA4(isExport = false) {
+            const resume = document.getElementById('resume-container');
+            const pages = resume.querySelectorAll('.page');
+            pages.forEach(page => {
+                const a4Width = 210; // A4 width in mm
+                const a4Height = 297; // A4 height in mm
+                const padding = 10; // 10mm padding on each side
+                const maxContentWidth = a4Width - 2 * padding; // 190mm
+                const maxContentHeight = a4Height - 2 * padding; // 277mm
+                let scale = 1;
+                let lineHeight = parseFloat(document.getElementById('lineSpacingSelect').value) || 1.2;
+                let marginBottom = '0.3rem';
+                let sectionMargin = '0.5rem';
+                let sectionPadding = '0.5rem';
+                let tablePadding = '4pt';
+                let fontSize = window.innerWidth <= 768 ? '10pt' : '11pt';
+                let headingFontSize = window.innerWidth <= 768 ? '14pt' : '16pt';
+                let titleFontSize = window.innerWidth <= 768 ? '18pt' : '20pt';
+
+                if (isExport) {
+                    const contentWidth = page.scrollWidth / 3.78; // px to mm
+                    const contentHeight = page.scrollHeight / 3.78; // px to mm
+                    if (contentWidth > maxContentWidth || contentHeight > maxContentHeight) {
+                        const widthScale = maxContentWidth / contentWidth;
+                        const heightScale = maxContentHeight / contentHeight;
+                        scale = Math.min(widthScale, heightScale) * 0.95; // 5% margin
+                        if (contentHeight > maxContentHeight) {
+                            lineHeight = Math.max(0.8, lineHeight * 0.8); // Compress line height
+                            marginBottom = '0.2rem';
+                            sectionMargin = '0.3rem';
+                            sectionPadding = '0.3rem';
+                            tablePadding = '3pt';
+                            fontSize = window.innerWidth <= 768 ? '9pt' : '10pt';
+                            headingFontSize = window.innerWidth <= 768 ? '12pt' : '14pt';
+                            titleFontSize = window.innerWidth <= 768 ? '16pt' : '18pt';
+                        }
+                    }
+                    page.style.width = `${a4Width}mm`;
+                    page.style.height = `${a4Height}mm`;
+                    page.style.padding = `${padding}mm`;
+                    page.style.boxSizing = 'border-box';
+                    page.style.overflow = 'hidden';
+                } else {
+                    page.style.width = '100%';
+                    page.style.height = 'auto';
+                    page.style.padding = window.innerWidth <= 768 ? '5mm' : `${padding}mm`;
+                    page.style.overflow = 'visible';
+                }
+
+                page.style.transform = `scale(${scale})`;
+                page.style.transformOrigin = 'top left';
+                page.style.lineHeight = `${lineHeight}`;
+                page.style.border = pageBorder ? `2px ${currentBorderStyle} #FF6F61` : 'none';
+                page.style.margin = pageBorder ? '0.5rem' : '0';
+                page.querySelectorAll('.section-title, h2').forEach(el => {
+                    el.style.margin = `${sectionMargin} 0`;
+                    el.style.padding = `${sectionPadding}`;
+                    el.style.fontSize = headingFontSize;
+                });
+                page.querySelectorAll('h1').forEach(el => {
+                    el.style.fontSize = titleFontSize;
+                    el.style.marginBottom = `${sectionMargin}`;
+                });
+                page.querySelectorAll('p, table th, table td').forEach(el => {
+                    el.style.padding = `${tablePadding}`;
+                    el.style.fontSize = fontSize;
+                });
+                page.querySelectorAll('.text-sm').forEach(el => {
+                    el.style.marginBottom = `${marginBottom}`;
+                    el.style.lineHeight = `${lineHeight}`;
+                    el.style.fontSize = fontSize;
+                });
+                page.querySelectorAll('#profilePhoto').forEach(el => {
+                    el.style.width = window.innerWidth <= 768 ? '25mm' : '35mm';
+                    el.style.height = window.innerWidth <= 768 ? '33.33mm' : '46.67mm';
+                });
+            });
+            updatePageNavigation();
+        }
+
+        function updateSectionSelectList() {
+            const select = document.getElementById('sectionSelect');
+            select.innerHTML = '<option value="">Pick a Section</option>';
+            const sections = document.querySelectorAll('#resume-container .section');
+            sections.forEach(section => {
+                const heading = section.querySelector('.section-title').innerText;
+                const id = section.id || heading.toLowerCase().replace(/\s+/g, '-');
+                section.id = id;
+                const option = document.createElement('option');
+                option.value = id;
+                option.textContent = heading;
+                select.appendChild(option);
+            });
+        }
+
+        function updateDeletePageList() {
+            const select = document.getElementById('deletePageSelect');
+            select.innerHTML = '<option value="">Pick a Page</option>';
+            const pages = document.querySelectorAll('#resume-container .page');
+            pages.forEach((page, index) => {
+                const option = document.createElement('option');
+                option.value = page.id;
+                option.textContent = `Page ${index + 1}`;
+                select.appendChild(option);
+            });
+        }
+
+        function updateSectionBackground() {
+            const sectionId = document.getElementById('sectionSelect').value;
+            const color = document.getElementById('sectionBackgroundSelect').value;
+            if (sectionId) {
+                const section = document.getElementById(sectionId);
+                if (section) {
+                    section.style.backgroundColor = color;
+                    fitContentToA4();
+                }
+            }
+        }
+
+        function changeBackground() {
+            const background = document.getElementById('backgroundSelect').value;
+            document.getElementById('resume-container').style.background = background;
+            fitContentToA4();
+        }
+
+        function changeBorderStyle() {
+            currentBorderStyle = document.getElementById('borderStyleSelect').value;
+            fitContentToA4();
+        }
+
+        function changeLineSpacing() {
+            fitContentToA4();
+        }
+
+        function togglePageBorder() {
+            pageBorder = !pageBorder;
+            fitContentToA4();
+        }
+
+        function changeTextAlignment() {
+            const alignment = document.getElementById('textAlignmentSelect').value;
+            const selection = window.getSelection();
+            if (selection.rangeCount) {
+                const range = selection.getRangeAt(0);
+                const selectedElement = range.startContainer.parentElement;
+                const section = selectedElement.closest('.section');
+                if (section) {
+                    const editableElements = section.querySelectorAll('[contenteditable]');
+                    const rangeNodes = [];
+                    let node = range.startContainer;
+                    while (node && node !== range.endContainer) {
+                        if (node.nodeType === Node.ELEMENT_NODE && node.hasAttribute('contenteditable')) {
+                            rangeNodes.push(node);
+                        }
+                        node = node.nextSibling || (node.parentNode && node.parentNode.nextSibling);
+                    }
+                    if (range.endContainer.nodeType === Node.ELEMENT_NODE && range.endContainer.hasAttribute('contenteditable')) {
+                        rangeNodes.push(range.endContainer);
+                    }
+                    rangeNodes.forEach(el => {
+                        el.style.textAlign = alignment;
+                    });
+                    fitContentToA4();
+                } else {
+                    alert('Select text within a section.');
+                }
+            } else {
+                alert('Select some text first.');
+            }
+        }
+
+        function changeFontColor() {
+            const color = document.getElementById('fontColor').value;
+            const selection = window.getSelection();
+            if (selection.rangeCount) {
+                const range = selection.getRangeAt(0);
+                const selectedElement = range.startContainer.parentElement;
+                if (selectedElement.closest('[contenteditable]')) {
+                    document.execCommand('foreColor', false, color);
+                    fitContentToA4();
+                } else {
+                    alert('Select text in an editable area.');
+                }
+            }
+        }
+
+        function toggleItalic() {
+            const selection = window.getSelection();
+            if (selection.rangeCount) {
+                const range = selection.getRangeAt(0);
+                const selectedElement = range.startContainer.parentElement;
+                if (selectedElement.closest('[contenteditable]')) {
+                    document.execCommand('italic', false, null);
+                    fitContentToA4();
+                } else {
+                    alert('Select text in an editable area.');
+                }
+            }
+        }
+
+        function toggleBold() {
+            const selection = window.getSelection();
+            if (selection.rangeCount) {
+                const range = selection.getRangeAt(0);
+                const selectedElement = range.startContainer.parentElement;
+                if (selectedElement.closest('[contenteditable]')) {
+                    document.execCommand('bold', false, null);
+                    fitContentToA4();
+                } else {
+                    alert('Select text in an editable area.');
+                }
+            }
+        }
+
+        function toggleBulletList() {
+            const selection = window.getSelection();
+            if (selection.rangeCount) {
+                const range = selection.getRangeAt(0);
+                const selectedElement = range.startContainer.parentElement;
+                if (selectedElement.closest('[contenteditable]')) {
+                    document.execCommand('insertUnorderedList', false, null);
+                    fitContentToA4();
+                } else {
+                    alert('Select text in an editable area.');
+                }
+            }
+        }
+
+        function toggleNumberedList() {
+            const selection = window.getSelection();
+            if (selection.rangeCount) {
+                const range = selection.getRangeAt(0);
+                const selectedElement = range.startContainer.parentElement;
+                if (selectedElement.closest('[contenteditable]')) {
+                    document.execCommand('insertOrderedList', false, null);
+                    fitContentToA4();
+                } else {
+                    alert('Select text in an editable area.');
+                }
+            }
+        }
+
+        function changeSectionHeadingColor() {
+            const section = event.target.closest('.section');
+            const colors = [
+                '#FF6F61', // Coral
+                '#FFD166', // Golden Yellow
+                '#6B728E', // Slate Blue
+                '#4CAF50', // Forest Green
+                '#2196F3', // Bright Blue
+                '#9C27B0', // Purple
+                '#FF9800', // Orange
+                '#E91E63', // Pink
+                '#607D8B', // Blue Gray
+                '#795548'  // Brown
+            ];
+            let currentIndex = colors.indexOf(section.querySelector('.section-title').style.background);
+            currentIndex = (currentIndex + 1) % colors.length;
+            section.querySelector('.section-title').style.background = colors[currentIndex];
+            fitContentToA4();
+        }
+
+        function exportToHTML() {
+            fitContentToA4(true);
+            const htmlContent = prepareResumeForOutput();
+            const blob = new Blob([htmlContent], { type: 'text/html' });
+            downloadFile(blob, 'resume.html');
+        }
+
+        function changePhoto() {
+            const file = document.getElementById('photoInput').files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    document.getElementById('profilePhoto').src = e.target.result;
+                    fitContentToA4();
+                };
+                reader.onerror = () => alert('Image load failed.');
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function addTableRow() {
+            const table = document.getElementById('qualificationTable').getElementsByTagName('tbody')[0];
+            const row = table.insertRow();
+            const colCount = table.rows[0].cells.length;
+            for (let i = 0; i < colCount; i++) {
+                const cell = row.insertCell(i);
+                cell.contentEditable = true;
+                cell.innerText = 'New Entry';
+                cell.style.textAlign = document.getElementById('textAlignmentSelect').value || 'justify';
+                cell.style.fontWeight = 'bold';
+            }
+            fitContentToA4();
+        }
+
+        function addTableColumn() {
+            const table = document.getElementById('qualificationTable');
+            const headerRow = table.rows[0];
+            const colCount = headerRow.cells.length;
+            const headerCell = headerRow.insertCell(colCount);
+            headerCell.contentEditable = true;
+            headerCell.innerText = 'New Column';
+            headerCell.style.backgroundColor = '#FF6F61';
+            headerCell.style.color = 'white';
+            headerCell.style.fontWeight = '700';
+            headerCell.style.textAlign = document.getElementById('textAlignmentSelect').value || 'justify';
+            for (let i = 1; i < table.rows.length; i++) {
+                const cell = table.rows[i].insertCell(colCount);
+                cell.contentEditable = true;
+                cell.innerText = 'New Entry';
+                cell.style.textAlign = document.getElementById('textAlignmentSelect').value || 'justify';
+                cell.style.fontWeight = 'bold';
+            }
+            fitContentToA4();
+        }
+
+        function deleteTableRow() {
+            const table = document.getElementById('qualificationTable');
+            const tbody = table.getElementsByTagName('tbody')[0];
+            if (tbody.rows.length > 1) {
+                tbody.deleteRow(-1); // Delete last row
+                fitContentToA4();
+            } else {
+                alert('Cannot delete the last row.');
+            }
+        }
+
+        function deleteTableColumn() {
+            const table = document.getElementById('qualificationTable');
+            if (table.rows[0].cells.length > 1) {
+                for (let i = 0; i < table.rows.length; i++) {
+                    table.rows[i].deleteCell(-1); // Delete last column
+                }
+                fitContentToA4();
+            } else {
+                alert('Cannot delete the last column.');
+            }
+        }
+
+        function moveSectionToEnd(btn) {
+            const section = btn.closest('.section');
+            const parent = section.parentNode;
+            const sections = Array.from(parent.querySelectorAll('.section'));
+            const currentIndex = sections.indexOf(section);
+            const divider = section.nextElementSibling?.classList.contains('divider') ? section.nextElementSibling : null;
+
+            if (currentIndex === 0) {
+                // Move first section to end
+                parent.appendChild(section);
+                if (divider) parent.appendChild(divider);
+            } else if (currentIndex === sections.length - 1) {
+                // Move last section to start
+                parent.insertBefore(section, sections[0]);
+                if (divider) parent.insertBefore(divider, section);
+            } else {
+                // Move to next position
+                const nextSection = sections[currentIndex + 1];
+                const nextDivider = nextSection.nextElementSibling?.classList.contains('divider') ? nextSection.nextElementSibling : null;
+                parent.insertBefore(section, nextDivider ? nextDivider.nextElementSibling : nextSection.nextElementSibling);
+                if (divider) parent.insertBefore(divider, section);
+            }
+            updateDeleteSectionList();
+            updateSectionSelectList();
+            fitContentToA4();
+        }
+
+        function copySection(btn) {
+            const section = btn.closest('.section');
+            const clone = section.cloneNode(true);
+            const heading = clone.querySelector('.section-title');
+            heading.innerText += ' (Copy)';
+            clone.id = heading.innerText.toLowerCase().replace(/\s+/g, '-') + '-' + Date.now();
+            const divider = document.createElement('div');
+            divider.className = 'divider';
+            section.parentNode.insertBefore(clone, section.nextElementSibling);
+            section.parentNode.insertBefore(divider, clone);
+            updateDeleteSectionList();
+            updateSectionSelectList();
+            fitContentToA4();
+        }
+
+        function addSection() {
+            const resume = document.getElementById('resume-container');
+            const currentPageElement = resume.querySelector(`#page-${currentPage}`);
+            const section = document.createElement('div');
+            section.className = 'section';
+            section.innerHTML = `
+                <div class="section-controls">
+                    <button onclick="moveSectionToEnd(this)">↓ To End</button>
+                    <button onclick="changeSectionHeadingColor()">Change Heading Color</button>
+                    <button onclick="copySection(this)">Copy</button>
+                </div>
+                <h2 contenteditable="true" class="section-title">New Section</h2>
+                <p contenteditable="true" class="text-sm">Enter content here</p>
+                <div class="divider"></div>
+            `;
+            currentPageElement.appendChild(section);
+            updateDeleteSectionList();
+            updateSectionSelectList();
+            fitContentToA4();
+        }
+
+        function addNewPage() {
+            totalPages++;
+            const resume = document.getElementById('resume-container');
+            const newPage = document.createElement('div');
+            newPage.className = 'page';
+            newPage.id = `page-${totalPages}`;
+            newPage.innerHTML = `
+                <h1 contenteditable="true" class="text-3xl">RESUME - Page ${totalPages}</h1>
+                <div class="divider"></div>
+            `;
+            resume.appendChild(newPage);
+            currentPage = totalPages;
+            updatePageNavigation();
+            updateDeletePageList();
+            fitContentToA4();
+        }
+
+        function deletePage() {
+            const select = document.getElementById('deletePageSelect');
+            const pageId = select.value;
+            if (!pageId) {
+                alert('Pick a page to delete!');
+                return;
+            }
+            if (totalPages <= 1) {
+                alert('Cannot delete the last page!');
+                return;
+            }
+            const page = document.getElementById(pageId);
+            if (page) {
+                page.remove();
+                totalPages--;
+                if (currentPage > totalPages) {
+                    currentPage = totalPages;
+                }
+                updateDeletePageList();
+                updatePageNavigation();
+                fitContentToA4();
+                alert('Page deleted!');
+            } else {
+                alert('Page not found.');
+            }
+        }
+
+        function navigatePage(direction) {
+            currentPage = Math.max(1, Math.min(totalPages, currentPage + direction));
+            updatePageNavigation();
+        }
+
+        function updatePageNavigation() {
+            const resume = document.getElementById('resume-container');
+            const pages = resume.querySelectorAll('.page');
+            pages.forEach((page, index) => {
+                page.style.display = index + 1 === currentPage ? 'block' : 'none';
+            });
+            document.getElementById('prevPage').style.display = currentPage === 1 ? 'none' : 'block';
+            document.getElementById('nextPage').style.display = currentPage === totalPages ? 'none' : 'block';
+        }
+
+        function setupPageSwipe() {
+            const resume = document.getElementById('resume-container');
+            let startX = 0;
+            resume.addEventListener('touchstart', (e) => {
+                startX = e.touches[0].clientX;
+            });
+            resume.addEventListener('touchend', (e) => {
+                const endX = e.changedTouches[0].clientX;
+                const deltaX = endX - startX;
+                if (deltaX > 50) {
+                    navigatePage(-1);
+                } else if (deltaX < -50) {
+                    navigatePage(1);
+                }
+            });
+        }
+
+        function updateDeleteSectionList() {
+            const select = document.getElementById('deleteSectionSelect');
+            select.innerHTML = '<option value="">Pick a Section</option>';
+            const sections = document.querySelectorAll('#resume-container .section');
+            sections.forEach(section => {
+                const heading = section.querySelector('.section-title').innerText;
+                const id = section.id || heading.toLowerCase().replace(/\s+/g, '-');
+                section.id = id;
+                const option = document.createElement('option');
+                option.value = id;
+                option.textContent = heading;
+                select.appendChild(option);
+            });
+        }
+
+        function deleteSection() {
+            const select = document.getElementById('deleteSectionSelect');
+            const sectionId = select.value;
+            if (!sectionId) {
+                alert('Pick a section to delete!');
+                return;
+            }
+            const section = document.getElementById(sectionId);
+            if (section) {
+                const nextDivider = section.nextElementSibling;
+                if (nextDivider && nextDivider.classList.contains('divider')) {
+                    nextDivider.remove();
+                }
+                section.remove();
+                updateDeleteSectionList();
+                updateSectionSelectList();
+                fitContentToA4();
+            } else {
+                alert('Section not found.');
+            }
+        }
+
+        function saveProjectToIndexedDB(callback) {
+            const name = currentProjectName || `Resume_${new Date().toISOString().replace(/[:.T-]/g, '')}`;
+            const resume = document.getElementById('resume-container').innerHTML;
+            const background = document.getElementById('resume-container').style.background;
+            const sections = document.querySelectorAll('.section');
+            const sectionBackgrounds = Array.from(sections).map(section => ({
+                id: section.id,
+                backgroundColor: section.style.backgroundColor
+            }));
+            const transaction = db.transaction(['projects'], 'readwrite');
+            const store = transaction.objectStore('projects');
+            store.put({ name, content: resume, background, sectionBackgrounds, timestamp: new Date().getTime() }).onsuccess = () => {
+                currentProjectName = name;
+                loadProjectList();
+                callback();
+            };
+            transaction.onerror = () => alert('Save failed.');
+        }
+
+        function saveProject() {
+            const name = prompt('Enter project name:') || `Resume_${new Date().toISOString().replace(/[:.T-]/g, '')}`;
+            if (!name) return;
+            saveProjectToIndexedDB(() => alert('Project saved!'));
+        }
+
+        function loadProjectList() {
+            const select = document.getElementById('loadProject');
+            select.innerHTML = '<option value="">Load Project</option>';
+            const transaction = db.transaction(['projects'], 'readonly');
+            const store = transaction.objectStore('projects');
+            store.getAll().onsuccess = (event) => {
+                const projects = event.target.result.sort((a, b) => b.timestamp - a.timestamp);
+                projects.forEach(project => {
+                    const option = document.createElement('option');
+                    option.value = project.name;
+                    option.textContent = project.name;
+                    select.appendChild(option);
+                });
+            };
+        }
+
+        function loadProject() {
+            const name = document.getElementById('loadProject').value;
+            if (!name) return;
+            const transaction = db.transaction(['projects'], 'readonly');
+            const store = transaction.objectStore('projects');
+            store.get(name).onsuccess = (event) => {
+                const project = event.target.result;
+                if (project) {
+                    document.getElementById('resume-container').innerHTML = project.content;
+                    currentProjectName = name;
+                    document.getElementById('resume-container').style.background = project.background || '#FFF3E0';
+                    document.getElementById('backgroundSelect').value = project.background || '#FFF3E0';
+                    if (project.sectionBackgrounds) {
+                        project.sectionBackgrounds.forEach(({ id, backgroundColor }) => {
+                            const section = document.getElementById(id);
+                            if (section) {
+                                section.style.backgroundColor = backgroundColor;
+                            }
+                        });
+                    }
+                    totalPages = document.querySelectorAll('.page').length;
+                    currentPage = 1;
+                    updateDeleteSectionList();
+                    updateSectionSelectList();
+                    updateDeletePageList();
+                    updatePageNavigation();
+                    fitContentToA4();
+                    alert('Project loaded!');
+                } else {
+                    alert('Project not found.');
+                }
+            };
+        }
+
+        function deleteProject() {
+            const name = document.getElementById('loadProject').value;
+            if (!name) {
+                alert('Select a project to delete!');
+                return;
+            }
+            if (!confirm(`Delete project "${name}"?`)) return;
+            const transaction = db.transaction(['projects'], 'readwrite');
+            const store = transaction.objectStore('projects');
+            store.delete(name).onsuccess = () => {
+                currentProjectName = null;
+                document.getElementById('loadProject').value = '';
+                loadProjectList();
+                alert('Project deleted!');
+            };
+            transaction.onerror = () => alert('Delete failed.');
+        }
+
+        function importHTML() {
+            const file = document.getElementById('htmlInput').files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(e.target.result, 'text/html');
+                    const resumeContent = doc.querySelector('#resume-container')?.innerHTML || doc.body.innerHTML;
+                    if (resumeContent) {
+                        document.getElementById('resume-container').innerHTML = resumeContent;
+                        totalPages = document.querySelectorAll('.page').length;
+                        currentPage = 1;
+                        updateDeleteSectionList();
+                        updateSectionSelectList();
+                        updateDeletePageList();
+                        fitContentToA4();
+                        alert('HTML imported!');
+                    } else {
+                        alert('Invalid HTML format.');
+                    }
+                } catch (err) {
+                    alert('Import failed. Ensure valid HTML file.');
+                }
+            };
+            reader.onerror = () => alert('Read failed.');
+            reader.readAsText(file);
+        }
+
+        function prepareResumeForOutput() {
+            const resume = document.getElementById('resume-container');
+            const pages = resume.querySelectorAll('.page');
+            let output = '';
+            pages.forEach((page, index) => {
+                const clone = page.cloneNode(true);
+                clone.querySelectorAll('[contenteditable]').forEach(el => {
+                    el.removeAttribute('contenteditable');
+                    el.style.outline = 'none';
+                });
+                clone.querySelectorAll('button').forEach(btn => btn.remove());
+                clone.querySelectorAll('.section-controls').forEach(controls => controls.remove());
+                const a4Width = 210; // A4 width in mm
+                const a4Height = 297; // A4 height in mm
+                const padding = 10; // 10mm padding
+                const maxContentWidth = a4Width - 2 * padding; // 190mm
+                const maxContentHeight = a4Height - 2 * padding; // 277mm
+                const contentWidth = page.scrollWidth / 3.78; // px to mm
+                const contentHeight = page.scrollHeight / 3.78; // px to mm
+                let scale = 1;
+                let lineHeight = parseFloat(document.getElementById('lineSpacingSelect').value) || 1.2;
+                let marginBottom = '0.3rem';
+                let sectionMargin = '0.5rem';
+                let sectionPadding = '0.5rem';
+                let tablePadding = '4pt';
+                let fontSize = '11pt';
+                let headingFontSize = '16pt';
+                let titleFontSize = '20pt';
+
+                if (contentWidth > maxContentWidth || contentHeight > maxContentHeight) {
+                    const widthScale = maxContentWidth / contentWidth;
+                    const heightScale = maxContentHeight / contentHeight;
+                    scale = Math.min(widthScale, heightScale) * 0.95; // 5% margin
+                    if (contentHeight > maxContentHeight) {
+                        lineHeight = Math.max(0.8, lineHeight * 0.8); // Compress line height
+                        marginBottom = '0.2rem';
+                        sectionMargin = '0.3rem';
+                        sectionPadding = '0.3rem';
+                        tablePadding = '3pt';
+                        fontSize = '10pt';
+                        headingFontSize = '14pt';
+                        titleFontSize = '18pt';
+                    }
+                }
+
+                output += `
+                    <div id="page-${index + 1}" style="width: ${a4Width}mm; height: ${a4Height}mm; padding: ${padding}mm; box-sizing: border-box; font-family: 'Domine', serif; line-height: ${lineHeight}; background: ${resume.style.background}; overflow: hidden; transform: scale(${scale}); transform-origin: top left; border: ${pageBorder ? `2px ${currentBorderStyle} #FF6F61` : 'none'}; margin: ${pageBorder ? '0.5rem' : '0'}; page-break-after: always;">
+                        ${clone.innerHTML}
+                    </div>
+                `;
+            });
+            return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resume</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Domine&display=swap');
+        body { margin: 0; padding: 0; }
+        .section { background-color: inherit; margin: 0.5rem 0; }
+        .section-title, h2 { font-weight: 700; font-size: 16pt; text-align: center; margin: 0.3rem 0; padding: 0.3rem; background: linear-gradient(45deg, #FF6F61, #FFD166); color: white; border-radius: 8px; width: 100%; box-sizing: border-box; text-shadow: 0 0 5px rgba(255, 255, 255, 0.5); }
+        .divider { border-top: 2px solid transparent; background: linear-gradient(to right, #FF6F61, ${resume.style.background}, #FFD166); margin: 0.3rem 0; }
+        #profilePhoto { width: 35mm; height: 46.67mm; object-fit: cover; border: 3px solid #FF6F61; border-radius: 8px; }
+        table { border-collapse: collapse; width: 100%; }
+        th, td { border: 2px solid #FF6F61; padding: 3pt; font-size: 11pt; font-weight: bold; }
+        th { background-color: #FF6F61; color: white; font-weight: 700; text-shadow: 0 0 5px rgba(255, 255, 240, 0.5); }
+        .text-sm { font-size: 11pt; font-weight: bold; line-height: 1.0; margin-bottom: 0.2rem; }
+        .text-3xl { font-size: 20pt; font-weight: bold; text-align: center; margin-bottom: 0.3rem; color: #FF6F61; text-shadow: 0 0 5px rgba(255, 255, 255, 0.3); }
+        .flex { display: flex; }
+        .justify-between { justify-content: space-between; }
+        .text-right { text-align: right; }
+        .font-semibold { font-weight: 600; }
+        .address-section { display: flex; justify-content: space-between; align-items: center; }
+        .address-content { flex: 1; padding-right: 1rem; }
+        @media print { @page { size: A4; margin: 0; } body { margin: 0; padding: 0; } #resume-container { display: block !important; visibility: visible !important; } #resume-container * { visibility: visible !important; } }
+    </style>
+</head>
+<body>
+    <div id="resume-container">${output}</div>
+</body>
+</html>
+            `;
+        }
+
+        function setupButtonDragging() {
+            const controls = document.querySelector('.controls');
+            const buttons = controls.querySelectorAll('button, .file-button, select, input[type="color"]');
+            let startX, startY, initialIndex;
+
+            buttons.forEach(button => {
+                button.addEventListener('mousedown', (e) => {
+                    longPressTimer = setTimeout(() => {
+                        isDragging = true;
+                        draggedButton = button;
+                        button.classList.add('dragging');
+                        startX = e.clientX;
+                        startY = e.clientY;
+                        initialIndex = Array.from(controls.children).indexOf(button.closest('.menu-group'));
+                    }, 500);
+                });
+
+                button.addEventListener('touchstart', (e) => {
+                    longPressTimer = setTimeout(() => {
+                        isDragging = true;
+                        draggedButton = button;
+                        button.classList.add('dragging');
+                        startX = e.touches[0].clientX;
+                        startY = e.touches[0].clientY;
+                        initialIndex = Array.from(controls.children).indexOf(button.closest('.menu-group'));
+                    }, 500);
+                });
+
+                button.addEventListener('mouseup', () => {
+                    clearTimeout(longPressTimer);
+                    if (isDragging && draggedButton) {
+                        draggedButton.classList.remove('dragging');
+                        isDragging = false;
+                        draggedButton = null;
+                    }
+                });
+
+                button.addEventListener('touchend', () => {
+                    clearTimeout(longPressTimer);
+                    if (isDragging && draggedButton) {
+                        draggedButton.classList.remove('dragging');
+                        isDragging = false;
+                        draggedButton = null;
+                    }
+                });
+            });
+
+            controls.addEventListener('mousemove', (e) => {
+                if (isDragging && draggedButton) {
+                    e.preventDefault();
+                    const deltaX = e.clientX - startX;
+                    const deltaY = e.clientY - startY;
+                    const controlGroups = Array.from(controls.children);
+                    const draggedGroup = draggedButton.closest('.menu-group');
+                    const rect = controls.getBoundingClientRect();
+                    const mouseX = e.clientX - rect.left;
+                    const groupWidth = draggedGroup.offsetWidth;
+                    const newIndex = Math.min(
+                        Math.max(
+                            Math.round(mouseX / groupWidth),
+                            0
+                        ),
+                        controlGroups.length - 1
+                    );
+                    if (newIndex !== initialIndex) {
+                        controls.insertBefore(draggedGroup, controlGroups[newIndex + (newIndex > initialIndex ? 1 : 0)]);
+                        initialIndex = newIndex;
+                    }
+                }
+            });
+
+            controls.addEventListener('touchmove', (e) => {
+                if (isDragging && draggedButton) {
+                    e.preventDefault();
+                    const deltaX = e.touches[0].clientX - startX;
+                    const deltaY = e.touches[0].clientY - startY;
+                    const controlGroups = Array.from(controls.children);
+                    const draggedGroup = draggedButton.closest('.menu-group');
+                    const rect = controls.getBoundingClientRect();
+                    const touchX = e.touches[0].clientX - rect.left;
+                    const groupWidth = draggedGroup.offsetWidth;
+                    const newIndex = Math.min(
+                        Math.max(
+                            Math.round(touchX / groupWidth),
+                            0
+                        ),
+                        controlGroups.length - 1
+                    );
+                    if (newIndex !== initialIndex) {
+                        controls.insertBefore(draggedGroup, controlGroups[newIndex + (newIndex > initialIndex ? 1 : 0)]);
+                        initialIndex = newIndex;
+                    }
+                }
+            });
+        }
+
+        window.addEventListener('resize', () => fitContentToA4());
+    </script>
+</body>
+</html>

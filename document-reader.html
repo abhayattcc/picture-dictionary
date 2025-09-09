@@ -1,0 +1,402 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Offline Document Reader</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f0f0f0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        #controls {
+            padding: 10px;
+            background-color: #fff;
+            border-bottom: 1px solid #ccc;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        #reader {
+            width: 100%;
+            height: calc(100vh - 60px);
+            background-color: white;
+            flex-grow: 1;
+            overflow: auto;
+            box-sizing: border-box;
+        }
+        #reader iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        #reader .text-content, #reader .pdf-content {
+            padding: 20px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-family: inherit;
+        }
+        input[type="file"] {
+            display: none;
+        }
+        .file-label {
+            padding: 5px 10px;
+            background-color: #4a90e2;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .file-label:hover {
+            background-color: #357abd;
+        }
+        input[type="number"] {
+            width: 80px;
+            padding: 5px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            text-align: center;
+        }
+        button {
+            padding: 5px 10px;
+            background-color: #4a90e2;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #357abd;
+        }
+        #pageInfo {
+            font-size: 14px;
+            color: #333;
+        }
+        .highlight {
+            background-color: #ffeb3b;
+        }
+    </style>
+</head>
+<body>
+    <div id="controls">
+        <label for="fileInput" class="file-label">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="17 8 12 3 7 8"></polyline>
+                <line x1="12" y1="3" x2="12" y2="15"></line>
+            </svg>
+            Choose File
+        </label>
+        <input type="file" id="fileInput" accept=".epub,.txt,.pdf,.html">
+        <input type="number" id="pageInput" min="1" placeholder="Page">
+        <button onclick="goToPage()">Go</button>
+        <span id="pageInfo"></span>
+    </div>
+    <div id="reader"></div>
+
+    <script src="https://unpkg.com/jszip@3.10.1/dist/jszip.min.js"></script>
+    <script src="https://unpkg.com/epubjs/dist/epub.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.10.377/pdf.min.js"></script>
+    <script>
+        let book = null;
+        let rendition = null;
+        let totalPages = 0;
+        let pdfDoc = null;
+        let currentPageNum = 1;
+        let pdfTextContent = '';
+
+        // Handle file input
+        document.getElementById('fileInput').addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const fileExtension = file.name.split('.').pop().toLowerCase();
+                document.getElementById('reader').innerHTML = '';
+                document.getElementById('pageInfo').textContent = '';
+                document.getElementById('pageInput').style.display = fileExtension === 'epub' || fileExtension === 'pdf' ? 'inline-block' : 'none';
+                
+                if (fileExtension === 'epub') {
+                    loadEpub(file);
+                } else if (fileExtension === 'txt') {
+                    loadText(file);
+                } else if (fileExtension === 'pdf') {
+                    loadPdf(file);
+                } else if (fileExtension === 'html') {
+                    loadHtml(file);
+                }
+                cacheFile(file);
+            }
+        });
+
+        // Load EPUB
+        function loadEpub(file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                book = ePub(e.target.result);
+                rendition = book.renderTo('reader', {
+                    width: '100%',
+                    height: '100%',
+                    spread: 'auto',
+                    flow: 'scrolled-doc',
+                    manager: 'continuous'
+                });
+                rendition.display();
+                book.ready.then(() => {
+                    book.locations.generate(1000).then(() => {
+                        totalPages = book.locations.total;
+                        updatePageInfo();
+                    });
+                });
+                rendition.on('relocated', updatePageInfo);
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        // Load Text
+        function loadText(file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const div = document.createElement('div');
+                div.className = 'text-content';
+                div.textContent = e.target.result;
+                document.getElementById('reader').appendChild(div);
+                document.getElementById('pageInfo').textContent = 'Text File';
+            };
+            reader.readAsText(file);
+        }
+
+        // Load PDF (text extraction only)
+        function loadPdf(file) {
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                const pdfData = new Uint8Array(e.target.result);
+                pdfDoc = await pdfjsLib.getDocument(pdfData).promise;
+                totalPages = pdfDoc.numPages;
+                currentPageNum = 1;
+                pdfTextContent = '';
+                
+                // Extract text from all pages
+                for (let i = 1; i <= totalPages; i++) {
+                    const page = await pdfDoc.getPage(i);
+                    const textContent = await page.getTextContent();
+                    const pageText = textContent.items.map(item => item.str).join(' ');
+                    pdfTextContent += pageText + '\n\n';
+                }
+                
+                const div = document.createElement('div');
+                div.className = 'pdf-content';
+                div.textContent = pdfTextContent;
+                document.getElementById('reader').appendChild(div);
+                updatePageInfo();
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        // Load HTML
+        function loadHtml(file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const iframe = document.createElement('iframe');
+                iframe.sandbox = 'allow-same-origin allow-scripts';
+                iframe.srcdoc = e.target.result;
+                document.getElementById('reader').appendChild(iframe);
+                document.getElementById('pageInfo').textContent = 'HTML File';
+            };
+            reader.readAsText(file);
+        }
+
+        // Page navigation
+        function goToPage() {
+            const pageInput = document.getElementById('pageInput').value;
+            if (pageInput && pageInput >= 1) {
+                if (rendition && book && book.locations.total) {
+                    const cfi = book.locations.cfiFromLocation(pageInput);
+                    rendition.display(cfi);
+                } else if (pdfDoc) {
+                    currentPageNum = Math.min(Math.max(1, parseInt(pageInput)), totalPages);
+                    // Scroll to approximate position in text content
+                    const div = document.getElementById('reader').querySelector('.pdf-content');
+                    if (div) {
+                        const pageHeight = div.scrollHeight / totalPages;
+                        div.scrollTop = (currentPageNum - 1) * pageHeight;
+                    }
+                    updatePageInfo();
+                }
+            }
+        }
+
+        // Update page info
+        function updatePageInfo() {
+            if (rendition && book && book.locations.total) {
+                const currentLocation = rendition.currentLocation();
+                if (currentLocation) {
+                    const currentPage = book.locations.locationFromCfi(currentLocation.start.cfi);
+                    document.getElementById('pageInfo').textContent = `Page ${currentPage} of ${totalPages}`;
+                }
+            } else if (pdfDoc) {
+                document.getElementById('pageInfo').textContent = `Page ${currentPageNum} of ${totalPages}`;
+            }
+        }
+
+        // IndexedDB for storing files
+        const dbName = 'DocumentCache';
+        const storeName = 'documents';
+
+        function openDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(dbName, 1);
+                request.onupgradeneeded = function(event) {
+                    const db = event.target.result;
+                    db.createObjectStore(storeName, { keyPath: 'name' });
+                };
+                request.onsuccess = function(event) {
+                    resolve(event.target.result);
+                };
+                request.onerror = function(event) {
+                    reject(event.target.error);
+                };
+            });
+        }
+
+        async function cacheFile(file) {
+            const db = await openDB();
+            const transaction = db.transaction([storeName], 'readwrite');
+            const store = transaction.objectStore(storeName);
+            store.put({ name: file.name, data: file });
+        }
+
+        async function loadCachedFile() {
+            const db = await openDB();
+            const transaction = db.transaction([storeName], 'readonly');
+            const store = transaction.objectStore(storeName);
+            const request = store.getAll();
+            return new Promise((resolve) => {
+                request.onsuccess = function(event) {
+                    if (event.target.result.length > 0) {
+                        const file = event.target.result[0].data;
+                        const fileExtension = file.name.split('.').pop().toLowerCase();
+                        document.getElementById('reader').innerHTML = '';
+                        document.getElementById('pageInfo').textContent = '';
+                        document.getElementById('pageInput').style.display = fileExtension === 'epub' || fileExtension === 'pdf' ? 'inline-block' : 'none';
+                        
+                        if (fileExtension === 'epub') {
+                            loadEpub(file);
+                        } else if (fileExtension === 'txt') {
+                            loadText(file);
+                        } else if (fileExtension === 'pdf') {
+                            loadPdf(file);
+                        } else if (fileExtension === 'html') {
+                            loadHtml(file);
+                        }
+                    }
+                };
+            });
+        }
+
+        // Load cached file on page load if available
+        window.addEventListener('load', loadCachedFile);
+
+        // Inline Service Worker registration
+        if ('serviceWorker' in navigator) {
+            const swCode = `
+                const CACHE_NAME = 'document-reader-cache-v1';
+                const urlsToCache = [
+                    '/',
+                    'https://unpkg.com/jszip@3.10.1/dist/jszip.min.js',
+                    'https://unpkg.com/epubjs/dist/epub.min.js',
+                    'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.10.377/pdf.min.js'
+                ];
+
+                self.addEventListener('install', event => {
+                    event.waitUntil(
+                        caches.open(CACHE_NAME).then(cache => {
+                            return cache.addAll(urlsToCache);
+                        })
+                    );
+                });
+
+                self.addEventListener('fetch', event => {
+                    event.respondWith(
+                        caches.match(event.request).then(response => {
+                            return response || fetch(event.request);
+                        })
+                    );
+                });
+
+                self.addEventListener('activate', event => {
+                    const cacheWhitelist = [CACHE_NAME];
+                    event.waitUntil(
+                        caches.keys().then(cacheNames => {
+                            return Promise.all(
+                                cacheNames.map(cacheName => {
+                                    if (!cacheWhitelist.includes(cacheName)) {
+                                        return caches.delete(cacheName);
+                                    }
+                                })
+                            );
+                        })
+                    );
+                });
+            `;
+
+            const blob = new Blob([swCode], { type: 'application/javascript' });
+            const url = URL.createObjectURL(blob);
+            navigator.serviceWorker.register(url).then(registration => {
+                console.log('Service Worker registered with scope:', registration.scope);
+            }).catch(error => {
+                console.error('Service Worker registration failed:', error);
+            });
+        }
+    </script>
+</body>
+</html>
