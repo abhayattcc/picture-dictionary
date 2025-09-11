@@ -5,10 +5,9 @@ Welcome to the **Best Odia Dictionary**, a feature-packed, kid-friendly, and pow
 ## Table of Contents
 - [Features](#features)
 - [Multi-Language Search](#multi-language-search)
-- [Double Tap & Copy](#double-tap--copy)
+- [select text](#select_text)
 - [PDF/Text Reader](#pdftext-reader)
 - [OCR for Image PDFs](#ocr-for-image-pdfs)
-- [Offline Mode](#offline-mode)
 - [Get Started](#get-started)
 - [Contribute](#contribute)
 
@@ -18,7 +17,7 @@ This dictionary is a treasure trove with **over 4 lakh words** in English, Hindi
 ## Multi-Language Search
 Search effortlessly using **English, Hindi, Odia, or Odia spelling**. 🔍 The intuitive search makes it easy for kids and adults alike to find meanings instantly. Perfect for multilingual learners! 🌍
 
-## Double Tap & Copy
+## select text
 Don’t understand a word? Just **double tap or copy** it, and a popup window will display the meaning or suggestions instantly. 🪄 It’s like magic for quick learning! ✨
 
 ## PDF/Text Reader
