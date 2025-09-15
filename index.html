@@ -26,55 +26,6 @@
             box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
             animation: bounceIn 0.8s ease-out;
         }
-        .header {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            background: rgba(255, 255, 255, 0.8);
-            padding: 10px;
-            border-radius: 15px;
-            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
-            margin-bottom: 20px;
-        }
-        #refresh-btn {
-            flex: 1;
-            padding: 12px;
-            font-size: 18px;
-            font-family: 'Comic Sans MS', 'Arial', sans-serif;
-            border: none;
-            border-radius: 15px;
-            cursor: pointer;
-            color: white;
-            background: #2196f3;
-            transition: transform 0.2s ease, background 0.3s ease;
-            text-align: center;
-            min-width: 100px;
-        }
-        #refresh-btn:hover {
-            transform: scale(1.05);
-            background: #1976d2;
-        }
-        .button {
-            flex: 1;
-            padding: 12px;
-            font-size: 18px;
-            font-family: 'Comic Sans MS', 'Arial', sans-serif;
-            font-weight: bold;
-            text-decoration: none;
-            color: white;
-            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
-            border: none;
-            border-radius: 15px;
-            cursor: pointer;
-            text-align: center;
-            min-width: 100px;
-            transition: transform 0.2s ease, background 0.3s ease;
-        }
-        .button:hover {
-            transform: scale(1.05);
-            background: linear-gradient(45deg, #ff4b4b, #3ab8b0);
-        }
         @keyframes bounceIn {
             0% { transform: scale(0.8); opacity: 0; }
             60% { transform: scale(1.05); opacity: 1; }
@@ -86,6 +37,20 @@
         .dictionary-section.hidden {
             display: none;
         }
+.nav-button {
+            display: inline-block;
+            padding: 10px 20px;
+            margin: 10px;
+            background-color: #007BFF;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        .nav-button:hover {
+            background-color: #0056b3;
+        }
+
         h2 {
             color: #d81b60;
             text-align: center;
@@ -540,23 +505,15 @@
                 width: 36px;
                 height: 36px;
             }
-            #refresh-btn, .button {
-                padding: 8px;
-                font-size: 14px;
-                min-width: 80px;
-            }
         }
     </style>
 </head>
 <body>
 <div class="container">
-    <div class="header">
-        <button id="refresh-btn" title="Refresh">🔄 Refresh</button>
-    </div>
     <div id="dictionary-section" class="dictionary-section">
         <h2>🌟 Abhayattcc Odia-English-Hindi-Dictionary-Reader 🌟</h2>
         <input type="text" id="searchInput" placeholder="Find a magic word!">
-        <ul id="suggestions" class="hidden"></ul>
+                              <ul id="suggestions" class="hidden"></ul>
         <div style="display: flex; gap: 10px; margin-bottom: 15px;">
             <input type="file" id="file-upload" accept=".pdf,.txt,.html" multiple>
             <button id="ocr-btn">📷 OCR</button>
@@ -577,7 +534,6 @@
         </form>
         <div id="results"></div>
         <div id="result-controls">
-            <select id="voiceSelect">
                 <option value=""> </option>
             </select>
             <button id="result-speak">⏯️ Speak</button>
@@ -2313,19 +2269,7 @@ async function initializeApp() {
     document.getElementById('text-content').addEventListener('touchend', handleTextSelection);
 }
 
-//refresh button 
-document.getElementById('refresh-btn').addEventListener('click', () => {
-        document.getElementById('searchInput').value = '';
-        document.getElementById('results').innerHTML = '';
-        document.getElementById('results').style.display = 'none';
-        document.getElementById('suggestions').classList.remove('visible');
-        document.getElementById('suggestions').classList.add('hidden');
-        document.getElementById('edit-dictionary-btn').classList.add('hidden');
-        document.getElementById('edit-dictionary-form').classList.add('hidden');
-        resultText = '';
-        stopSpeech();
-        initializeApp();
-    });
+initializeApp();
 </script>
 </body>
 </html>
