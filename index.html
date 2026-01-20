@@ -601,6 +601,7 @@ const filesToCache = [
 ];
 let voices = [];
 let isTTSSupported = 'speechSynthesis' in window;
+let fullScreenImage = null;
 
 function showProgress(message, percentage) {
     const progressContainer = document.getElementById('progress-container');
@@ -884,6 +885,10 @@ function toggleOdiaMeaning(element) {
         odiaMeaningDiv.style.display = 'none';
         element.textContent = 'Show Odia Meaning ►';
     }
+}
+
+function autoCorrectSentenceBreaks(text) {
+    return text.replace(/(\.)\s+/g, '$1\n');
 }
 
 async function searchWord(word, targetElement = document.getElementById('results')) {
@@ -1181,6 +1186,22 @@ async function searchWord(word, targetElement = document.getElementById('results
                 imgElements.forEach(img => img.src = imageUrl);
             }
         }
+
+        // Add double-tap and dblclick for images
+        const images = targetElement.querySelectorAll('.dictionary-image img');
+        images.forEach(img => {
+            let lastTap = 0;
+            img.addEventListener('touchstart', (e) => {
+                const currentTime = new Date().getTime();
+                const tapLength = currentTime - lastTap;
+                if (tapLength < 300 && tapLength > 0) {
+                    showFullScreenImage(img.src);
+                    e.preventDefault();
+                }
+                lastTap = currentTime;
+            });
+            img.addEventListener('dblclick', () => showFullScreenImage(img.src));
+        });
     } else {
         let notFoundMessage = '';
         if (targetElement === document.getElementById('results')) {
@@ -1481,6 +1502,19 @@ function clearLastTappedPosition(fileName) {
     localStorage.setItem('lastTappedPositions', JSON.stringify(positionData));
 }
 
+function getDistance(touches) {
+    const dx = touches[0].pageX - touches[1].pageX;
+    const dy = touches[0].pageY - touches[1].pageY;
+    return Math.sqrt(dx * dx + dy * dy);
+}
+
+function getCenter(touches) {
+    return {
+        x: (touches[0].pageX + touches[1].pageX) / 2,
+        y: (touches[0].pageY + touches[1].pageY) / 2
+    };
+}
+
 function loadTextFile(files) {
     textPages = [];
     const totalFiles = files.length;
@@ -1495,6 +1529,7 @@ function loadTextFile(files) {
                 div.innerHTML = content;
                 content = div.textContent;
             }
+            content = autoCorrectSentenceBreaks(content);
             textPages.push(content);
             processedFiles++;
             showProgress('Processing text file', Math.round((processedFiles / totalFiles) * 100));
@@ -1587,7 +1622,8 @@ async function loadPDF(files) {
                     for (let i = 1; i <= pdf.numPages; i++) {
                         const page = await pdf.getPage(i);
                         const textContent = await page.getTextContent();
-                        const pageText = textContent.items.map(item => item.str).join(' ');
+                        let pageText = textContent.items.map(item => item.str).join(' ');
+                        pageText = autoCorrectSentenceBreaks(pageText);
                         textPages.push(pageText);
                         showProgress(`Processing PDF (File ${processedFiles + 1}/${totalFiles}, Page ${i}/${pdf.numPages})`,
                             Math.round((processedFiles + i / pdf.numPages) / totalFiles * 100));
@@ -1935,6 +1971,130 @@ function toggleEditText() {
         textContentDiv.style.display = 'block';
         textEditBtn.textContent = '✏️';
     }
+}
+
+function updateImageTransform(img) {
+    img.style.transform = `translate(${currentPosX}px, ${currentPosY}px) scale(${currentScale})`;
+}
+
+function handleTouchStart(e) {
+    if (e.touches.length === 2) {
+        e.preventDefault();
+        pinching = true;
+        initialDist = getDistance(e.touches);
+        initialCenter = getCenter(e.touches);
+        initialScale = currentScale;
+        initialPosX = currentPosX;
+        initialPosY = currentPosY;
+    } else if (e.touches.length === 1) {
+        isDragging = true;
+        lastTouchX = e.touches[0].pageX;
+        lastTouchY = e.touches[0].pageY;
+    }
+}
+
+function handleTouchMove(e, img) {
+    if (pinching && e.touches.length === 2) {
+        e.preventDefault();
+        let newDist = getDistance(e.touches);
+        let newScale = initialScale * (newDist / initialDist);
+        newScale = Math.max(1, Math.min(newScale, 5));
+        let vpX = initialCenter.x;
+        let vpY = initialCenter.y;
+        let imageX = (vpX - initialPosX) / initialScale;
+        let imageY = (vpY - initialPosY) / initialScale;
+        currentScale = newScale;
+        currentPosX = vpX - imageX * currentScale;
+        currentPosY = vpY - imageY * currentScale;
+        updateImageTransform(img);
+    } else if (isDragging && e.touches.length === 1) {
+        e.preventDefault();
+        let deltaX = e.touches[0].pageX - lastTouchX;
+        let deltaY = e.touches[0].pageY - lastTouchY;
+        currentPosX += deltaX;
+        currentPosY += deltaY;
+        lastTouchX = e.touches[0].pageX;
+        lastTouchY = e.touches[0].pageY;
+        updateImageTransform(img);
+    }
+}
+
+function handleTouchEnd(e) {
+    pinching = false;
+    isDragging = false;
+}
+
+let pinching = false;
+let isDragging = false;
+let initialDist = 0;
+let initialCenter = {x: 0, y: 0};
+let initialScale = 1;
+let initialPosX = 0;
+let initialPosY = 0;
+let currentScale = 1;
+let currentPosX = 0;
+let currentPosY = 0;
+let lastTouchX = 0;
+let lastTouchY = 0;
+
+function showFullScreenImage(src) {
+    if (fullScreenImage) {
+        fullScreenImage.remove();
+        fullScreenImage = null;
+        return;
+    }
+    fullScreenImage = document.createElement('div');
+    fullScreenImage.style.position = 'fixed';
+    fullScreenImage.style.top = '0';
+    fullScreenImage.style.left = '0';
+    fullScreenImage.style.width = '100vw';
+    fullScreenImage.style.height = '100vh';
+    fullScreenImage.style.backgroundColor = 'black';
+    fullScreenImage.style.zIndex = '10001';
+    fullScreenImage.style.overflow = 'hidden';
+    const img = document.createElement('img');
+    img.src = src;
+    img.style.position = 'absolute';
+    img.style.left = '0';
+    img.style.top = '0';
+    img.style.width = 'auto';
+    img.style.height = 'auto';
+    img.style.maxWidth = 'none';
+    img.style.maxHeight = 'none';
+    img.style.objectFit = 'none';
+    fullScreenImage.appendChild(img);
+    const closeBtn = document.createElement('button');
+    closeBtn.textContent = 'X';
+    closeBtn.style.position = 'absolute';
+    closeBtn.style.top = '10px';
+    closeBtn.style.right = '10px';
+    closeBtn.style.zIndex = '10002';
+    closeBtn.style.background = 'white';
+    closeBtn.style.border = 'none';
+    closeBtn.style.borderRadius = '50%';
+    closeBtn.style.width = '30px';
+    closeBtn.style.height = '30px';
+    closeBtn.style.fontSize = '20px';
+    closeBtn.style.cursor = 'pointer';
+    closeBtn.onclick = () => showFullScreenImage();
+    fullScreenImage.appendChild(closeBtn);
+    document.body.appendChild(fullScreenImage);
+    img.onload = () => {
+        const containerWidth = fullScreenImage.clientWidth;
+        const containerHeight = fullScreenImage.clientHeight;
+        const imgWidth = img.naturalWidth;
+        const imgHeight = img.naturalHeight;
+        const scaleX = containerWidth / imgWidth;
+        const scaleY = containerHeight / imgHeight;
+        initialScale = Math.min(scaleX, scaleY);
+        currentScale = initialScale;
+        currentPosX = (containerWidth - imgWidth * currentScale) / 2;
+        currentPosY = (containerHeight - imgHeight * currentScale) / 2;
+        updateImageTransform(img);
+    };
+    fullScreenImage.addEventListener('touchstart', handleTouchStart);
+    fullScreenImage.addEventListener('touchmove', (e) => handleTouchMove(e, img));
+    fullScreenImage.addEventListener('touchend', handleTouchEnd);
 }
 
 async function initializeApp() {
