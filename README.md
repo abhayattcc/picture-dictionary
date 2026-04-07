@@ -26,8 +26,9 @@
 
 *(Add your screenshots here after uploading them to the repo)*
 
-![Homepage Screenshot](https://raw.githubusercontent.com/abhayattcc/Best-odia-dictionary/main/screenshots/home.png)
-![Search Result with Speech](https://raw.githubusercontent.com/abhayattcc/Best-odia-dictionary/main/screenshots/search.png)
+![Homepage Screenshot]
+[(https://raw.githubusercontent.com/abhayattcc/Best-odia-dictionary/refs/heads/main/s2.jpg)]
+![Search Result with Speech] [(https://raw.githubusercontent.com/abhayattcc/Best-odia-dictionary/refs/heads/main/s3.jpg)]
 
 ## 🛠 How to Use
 
